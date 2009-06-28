@@ -97,11 +97,11 @@ void MainWindow::createActions()
 
  void MainWindow::save()
  {
-  QString fileName = MapView->fileDialog();
+ MapView->fileDialog();
 
   //::getSaveFileName(this, tr("Save File"), home() ,;
 
- 	MapView->saveMap(fileName);
+ 	MapView->saveMap(MapView->filename);
  }
 
 void MainWindow::createMenus()

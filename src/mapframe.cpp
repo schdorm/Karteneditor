@@ -27,6 +27,7 @@
  #include <QtGui/QGridLayout>
  #include <QtGui/QPushButton>
  #include <QtGui/QLineEdit>
+ #include <QtGui/QFileDialog>
 
  #include <QtGui/QPixmap>
 
@@ -70,11 +71,11 @@
  	savestream << "</objektdatei>";
 
   	savestream << "<objektpositionx>";
- 	savestream << saveitem->data(3).toString();
+ 	savestream << saveitem->data(3).toInt();
  	savestream << "</objektpositionx>";
 
  	savestream << "<objektpositiony>";
- 	savestream << saveitem->data(4).toString();
+ 	savestream << saveitem->data(4).toInt();
  	savestream << "</objektpositiony>";
  	savestream << "</objekt>";
  }
@@ -87,6 +88,7 @@
  
  void MapFrame::mousePressEvent(QMouseEvent *event)
  {
+ ziel = event->pos();
 	QList<QGraphicsItem *> QGIlistAtClick = items(event->pos());
 	if(QGIlistAtClick.isEmpty())
 	{
@@ -96,6 +98,7 @@
 		QGridLayout *cODlayout = new QGridLayout(createObjectDialog);
 		
 		QLabel *file = new QLabel(createObjectDialog);
+		file->setFrameShape(QFrame::Box);
 		cODlayout->addWidget(file, 0, 0, 1, 1);
 
 		QPushButton *selectFileButton = new QPushButton ("...",createObjectDialog);
@@ -108,6 +111,7 @@
 
 		QLineEdit *objToolTip = new QLineEdit(createObjectDialog);
 		objToolTip->setMaxLength(25);
+		
 		cODlayout->addWidget(objToolTip, 2, 0, 1, 2);
 
 		QPushButton *ok = new QPushButton(tr("Ok"),createObjectDialog);
@@ -123,7 +127,7 @@
 		connect(abort, SIGNAL(clicked()), createObjectDialog, SLOT(close()));
 		connect(abort, SIGNAL(clicked()), createObjectDialog, SLOT(deleteLater()));
 		connect(selectFileButton, SIGNAL(clicked()), this, SLOT(fileDialog()));
-		connect(objToolTip, SIGNAL(textEdited(QString()), this, SLOT(setToolTipString(QString)));
+		connect(objToolTip, SIGNAL(textEdited(QString)), this, SLOT(setToolTipString(QString)));
 	}
 	else
 	{
@@ -141,11 +145,17 @@
 	}
 }
 
+
 void MapFrame::setToolTipString(QString ttstring)
 {
 tooltip = ttstring;
 }
 
+
+void MapFrame::setFileString(QString fileString)
+{
+filename = fileString;
+}
 
 
 void MapFrame::newObject()
@@ -160,15 +170,21 @@ newObject(typ,filename,tooltip);
   itemtoAdd->setData(0, QVariant(otyp));
   itemtoAdd->setData(1, QVariant(otooltip));
   itemtoAdd->setData(2, QVariant());
+  itemtoAdd->setData(3, QVariant(ziel.x()));
+  itemtoAdd->setData(4, QVariant(ziel.y()));
  }
 
 
 
- QString MapFrame::fileDialog()
+ void MapFrame::fileDialog()
  {
   QString fd_filename = QString();
+  QFileDialog *fd = new QFileDialog(this, Qt::Dialog);
+  //fd->setFilter(filter);
+  fd->setModal(true);
+  fd->show();
+  connect(fd,SIGNAL(fileSelected(QString)),this,SLOT(setFileString(QString)));
 
-  //So, das habe ich fein vorbereitet, den Rest ueberlass ich dir mal ;-)
-  filename = fd_filename;
-  return fd_filename;
+  //filename = fd_filename;
+  //return fd_filename;
  }

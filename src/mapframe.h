@@ -39,6 +39,9 @@
  QString typ;
  QString filename;
  QString tooltip;
+ int x, y;
+ QPoint ziel;
+
 
  public slots:
  void newMap();
@@ -47,9 +50,10 @@
 
  void newObject();
  void newObject(QString, QString, QString);
- QString fileDialog();
+ void fileDialog();
 
  void setToolTipString(QString);
+ void setFileString(QString);
 
  protected:
  void mousePressEvent(QMouseEvent*);

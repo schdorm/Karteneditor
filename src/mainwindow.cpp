@@ -19,13 +19,19 @@
  ***************************************************************************/
  
 #include "mainwindow.h"
-#include <QtGui/QToolBar>
-#include <QtGui/QAction>
+
 #include <QtGui/QMenuBar>
+#include <QtGui/QAction>
+//#include <QtGui/QToolBar>
 #include <QtGui/QStatusBar>
-#include <QDir>
+
 #include <QtGui/QHBoxLayout>
-#include <QFileDialog>
+//#include <QtGui/QVBoxLayout>
+//#include <QtGui/QFrame>
+//#include <QtGui/QFileDialog>
+
+//#include <QtCore/QDir>
+
 
 MainWindow::MainWindow()
  {
@@ -34,17 +40,13 @@ MainWindow::MainWindow()
       setCentralWidget(zentralwidget);
 
 
-
- QWidget *SideBar = new QWidget(zentralwidget);
-//      topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+SideBar = new SideBarClass();
+SideBar->setParent(zentralwidget);
 SideBar->setFixedWidth(300);
 
  MapView = new MapFrame();
       MapView->setParent(zentralwidget); 
  MapView->initMap();
-
-// QWidget *bottomFiller = new QWidget;
-//      bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
  QHBoxLayout *layout = new QHBoxLayout(zentralwidget);
      layout->setMargin(5); 
@@ -52,15 +54,7 @@ SideBar->setFixedWidth(300);
 	layout->addWidget(MapView);
 	layout->addWidget(SideBar);
 
-//     layout->addWidget(bottomFiller);
-//	layout->setStretch(1,2);
      zentralwidget->setLayout(layout);
-
-itemList = new QListView(SideBar);
-itemList->setSelectionMode(QAbstractItemView::SingleSelection);
-
-
-
 
 
  createActions();
@@ -72,6 +66,9 @@ itemList->setSelectionMode(QAbstractItemView::SingleSelection);
  setWindowTitle(tr("Karteneditor"));
  setMinimumSize(300, 200);
  resize(800, 600);
+ 
+ connect(MapView, SIGNAL(newObjectCreated()), this, SLOT(addNewObjectToList()));
+ connect(SideBar->itemList, SIGNAL(currentRowChanged(int)), this, SLOT(updateItemList(int)));
  }
 
 void MainWindow::createActions()
@@ -131,4 +128,20 @@ void MainWindow::createMenus()
   helpMenu = menuBar()->addMenu(tr("&Help"));
  }
  
+void MainWindow::addNewObjectToList()
+{
 
+QGraphicsItem *entry = MapView->items().last();
+
+SideBar->MapEntries << entry->data(3).toString();
+SideBar->itemList->clear();
+SideBar->itemList->addItems(SideBar->MapEntries);
+}
+
+void MainWindow::updateItemList(int selectedItemRow)
+{
+if(selectedItemRow == 0)
+{
+}
+
+}

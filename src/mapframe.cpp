@@ -208,9 +208,10 @@ newObject(typ,filename,tooltip);
   QGraphicsPixmapItem *itemtoAdd = szene->addPixmap(QPixmap(filename));
   itemtoAdd->setData(0, QVariant(otyp));
   itemtoAdd->setData(1, QVariant(otooltip));
-  itemtoAdd->setData(2, QVariant());
+  itemtoAdd->setData(2, QVariant(ofilename));
   itemtoAdd->setData(3, QVariant(ziel.x()));
   itemtoAdd->setData(4, QVariant(ziel.y()));
+  emit newObjectCreated();
  }
 
 

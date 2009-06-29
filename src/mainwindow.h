@@ -23,13 +23,13 @@
 
 
  #include <QtGui/QMainWindow>
- #include "mapframe.h"
  
  #include <QtGui/QAction>
  #include <QtGui/QMenu>
- #include <QtGui/QListView>
 
- class Qdir;
+ #include "mapframe.h"
+ #include "sidebar.h"
+
 
  class MainWindow : public QMainWindow
  {
@@ -40,7 +40,8 @@
  */
  public:
  MapFrame *MapView;
- QListView *itemList;
+
+ SideBarClass *SideBar;
  MainWindow();
 
 
@@ -48,8 +49,9 @@
  void newFile();
  void open();
  void save();
+ void addNewObjectToList();
 
-
+ void updateItemList(int);
 
  private:
  void createActions();

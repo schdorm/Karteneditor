@@ -24,7 +24,7 @@
 #include <QtGui/QMenuBar>
 #include <QtGui/QStatusBar>
 #include <QDir>
-#include <QtGui/QVBoxLayout>
+#include <QtGui/QHBoxLayout>
 #include <QFileDialog>
 
 MainWindow::MainWindow()
@@ -35,21 +35,33 @@ MainWindow::MainWindow()
 
 
 
- QWidget *topFiller = new QWidget;
-      topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+ QWidget *SideBar = new QWidget(zentralwidget);
+//      topFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+SideBar->setFixedWidth(300);
 
  MapView = new MapFrame();
-      //MapView->setParent(zentralwidget); 
+      MapView->setParent(zentralwidget); 
+ MapView->initMap();
 
- QWidget *bottomFiller = new QWidget;
-      bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+// QWidget *bottomFiller = new QWidget;
+//      bottomFiller->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
- QVBoxLayout *layout = new QVBoxLayout;
+ QHBoxLayout *layout = new QHBoxLayout(zentralwidget);
      layout->setMargin(5); 
-     layout->addWidget(topFiller);
-     layout->addWidget(MapView);
-     layout->addWidget(bottomFiller);
+     
+	layout->addWidget(MapView);
+	layout->addWidget(SideBar);
+
+//     layout->addWidget(bottomFiller);
+//	layout->setStretch(1,2);
      zentralwidget->setLayout(layout);
+
+itemList = new QListView(SideBar);
+itemList->setSelectionMode(QAbstractItemView::SingleSelection);
+
+
+
+
 
  createActions();
  createMenus();
@@ -58,8 +70,8 @@ MainWindow::MainWindow()
  statusBar()->showMessage(message);
 
  setWindowTitle(tr("Karteneditor"));
- setMinimumSize(160, 160);
- resize(480, 320);
+ setMinimumSize(300, 200);
+ resize(800, 600);
  }
 
 void MainWindow::createActions()
@@ -88,6 +100,7 @@ void MainWindow::createActions()
  void MainWindow::newFile()
  {
 
+MapView->newMap();
  }
 
  void MainWindow::open()
@@ -97,11 +110,11 @@ void MainWindow::createActions()
 
  void MainWindow::save()
  {
- MapView->fileDialog();
+ MapView->fileDialog(NameFilters::Map|NameFilters::Save);
 
   //::getSaveFileName(this, tr("Save File"), home() ,;
 
- 	MapView->saveMap(MapView->filename);
+ //MapView->saveMap(MapView->filename);
  }
 
 void MainWindow::createMenus()
@@ -117,3 +130,5 @@ void MainWindow::createMenus()
 
   helpMenu = menuBar()->addMenu(tr("&Help"));
  }
+ 
+

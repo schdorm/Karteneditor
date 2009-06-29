@@ -27,12 +27,16 @@
  
  #include <QtGui/QMouseEvent>
  #include <QtGui/QDialog>
+ #include <QtGui/QFileDialog>
+
+ namespace NameFilters{ enum NFs{Img, Map, Save};}
  
  class MapFrame : public QGraphicsView
  {
  Q_OBJECT
 
  public:
+ void initMap();
  QGraphicsScene *szene;
  QSize mapgr;
  QGraphicsPixmapItem *activeItem;
@@ -41,6 +45,8 @@
  QString tooltip;
  int x, y;
  QPoint ziel;
+  QFileDialog *fd;
+
 
 
  public slots:
@@ -50,7 +56,8 @@
 
  void newObject();
  void newObject(QString, QString, QString);
- void fileDialog();
+ void fileDialog(int);
+// void fileDialog(NameFilters::NFs);
 
  void setToolTipString(QString);
  void setFileString(QString);

@@ -27,6 +27,7 @@
  
  #include <QtGui/QAction>
  #include <QtGui/QMenu>
+ #include <QtGui/QListView>
 
  class Qdir;
 
@@ -39,6 +40,7 @@
  */
  public:
  MapFrame *MapView;
+ QListView *itemList;
  MainWindow();
 
 

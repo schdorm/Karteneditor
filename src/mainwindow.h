@@ -49,9 +49,14 @@
  void newFile();
  void open();
  void save();
+ void savef();
  void addNewObjectToList();
 
  void updateItemList(int);
+ 
+ void sideBar_SelectFile();
+ void sideBar_FileSelected();
+ void spinboxHandler();
 
  private:
  void createActions();
@@ -64,8 +69,10 @@
  QAction *newAct;
  QAction *openAct;
  QAction *saveAct;
+ QAction *saveAsAct;
  QAction *quitAct;
-
+ 
+ QString mapfilename;
  
  };
  #endif

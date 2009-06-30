@@ -30,20 +30,22 @@
  
 	QVBoxLayout *SideBarLayout = new QVBoxLayout(this);
 
-	MapEntries << "Stadtname" << "Maphintergrund" << "Nordmap" << "Westmap" << "Suedmap" << "Ostmap";
-
-	itemList = new QListWidget(this);
-	itemList->setSelectionMode(QAbstractItemView::SingleSelection);
-	itemList->addItems(MapEntries);
-	SideBarLayout->addWidget(itemList);
+	initMapEntriesList();
+	itemListWidget = new QListWidget(this);
+	itemListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+	itemListWidget->addItems(MapEntries);
+	SideBarLayout->addWidget(itemListWidget);
 	
 	QFrame *line = new QFrame(this);
 	line->setFrameShape(QFrame::HLine);
 	SideBarLayout->addWidget(line);
 
 	editToolTip = new QLineEdit(this);
+	editToolTip->setMaxLength(30);
 	SideBarLayout->addWidget(editToolTip );
-QWidget *wid = new QWidget(this);
+
+
+	QWidget *wid = new QWidget(this);
 	SideBarLayout->addWidget(wid);
 
 	QHBoxLayout *objectFileLayout = new QHBoxLayout(wid);
@@ -56,7 +58,34 @@ QWidget *wid = new QWidget(this);
 	objectFileLayout->addWidget(selectFileButton);
 	objectFileLayout->setStretch(0,5);
 
+	QWidget *wid2 = new QWidget(this);
+	SideBarLayout->addWidget(wid2);
+
+	QHBoxLayout *objectFileLayout2 = new QHBoxLayout(wid2);
+
+	XBox = new QSpinBox(wid2);
+	objectFileLayout2->addWidget(XBox);
+	XBox->setRange(0,16383);
+	XBox->setValue(1000);
+	
+	YBox = new QSpinBox(wid2);
+	objectFileLayout2->addWidget(YBox);
+	YBox->setRange(0,16383);
+	YBox->setValue(1000);
+	
+	ZBox = new QDoubleSpinBox(wid2);
+	objectFileLayout2->addWidget(ZBox);
+	ZBox->setRange(0,10);
+	ZBox->setValue(1);
+	ZBox->setDecimals(3);
+
 
 //	SideBarLayout->addLayout(objectFileLayout);
 
+ }
+ 
+void SideBarClass::initMapEntriesList()
+ {
+	MapEntries.clear();
+ 	MapEntries << "Stadtname" << "Maphintergrund" << "Nordmap" << "Westmap" << "Suedmap" << "Ostmap";
  }

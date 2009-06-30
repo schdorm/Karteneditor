@@ -26,7 +26,7 @@
  #include <QtGui/QLineEdit>
  #include <QtGui/QLabel>
  #include <QtGui/QPushButton>
-
+ #include <QtGui/QSpinBox>
 
  
  class SideBarClass : public QWidget
@@ -36,10 +36,13 @@
  QStringList MapEntries;
  SideBarClass();
  
-  QListWidget *itemList;
+  QListWidget *itemListWidget;
   QPushButton *selectFileButton;
   QLabel *fileView;
   QLineEdit *editToolTip;
- 
+  QSpinBox *XBox, *YBox;
+  QDoubleSpinBox *ZBox;
+ void initMapEntriesList();
+
  };
  #endif

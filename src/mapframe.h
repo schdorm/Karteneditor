@@ -28,6 +28,8 @@
  #include <QtGui/QMouseEvent>
  #include <QtGui/QDialog>
  #include <QtGui/QFileDialog>
+ 
+
 
  namespace NameFilters{ enum NFs{Img, Map, Save};}
  
@@ -36,17 +38,25 @@
  Q_OBJECT
 
  public:
+ QString bgi_filename; // Backgroundimage-FN
+ QString cityname;
+ QString mapnorth, mapwest, mapsouth, mapeast;
+ QList <QGraphicsItem *> itemList;
+ QSize mapSize;
+ 
  void initMap();
  QGraphicsScene *szene;
- QSize mapgr;
+
  QGraphicsPixmapItem *activeItem;
- QString typ;
- QString filename;
- QString tooltip;
+ QString object_typ;
+ QString object_filename;
+ QString object_tooltip;
  int x, y;
  QPoint ziel;
-  QFileDialog *fd;
 
+ QFileDialog *fd;
+ QDialog *createObjectDialog;
+ QString fd_filename;
 
 
  public slots:
@@ -59,13 +69,18 @@
  void fileDialog(int);
 // void fileDialog(NameFilters::NFs);
 
+ void setTyp(QString);
  void setToolTipString(QString);
  void setFileString(QString);
-
+ 
+ void setXPos(int);
+ void setYPos(int);
+ 
  protected:
  void mousePressEvent(QMouseEvent*);
  
  signals:
  void newObjectCreated();
+ void fileStringChanged(QString);
  };
  #endif

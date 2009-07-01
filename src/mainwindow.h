@@ -48,6 +48,7 @@
  private slots:
  void newFile();
  void open();
+ void openMap();
  void save();
  void savef();
  void addNewObjectToList();

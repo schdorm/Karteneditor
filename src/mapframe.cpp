@@ -33,11 +33,12 @@
  #include <QtGui/QLineEdit>
  #include <QtGui/QSpinBox>
 
- #include <QStringList> 
+ #include <QtCore/QStringList> 
  #include <QtCore/QSignalMapper>
 
+#include <QtCore/QXmlStreamReader>
 
- #include <QtGui/QPixmap>
+//  #include <QtGui/QPixmap>
  
  
  void MapFrame::initMap()
@@ -90,49 +91,60 @@ void MapFrame::saveMap(QString save_filename)
 		if(!save_dir.mkdir("img"))
 		{
 			QDialog *saveFailedDialog = new QDialog(this);
-			QPushButton *ok = new QPushButton (saveFailedDialog);
+			saveFailedDialog->setModal(true);
+			saveFailedDialog->setWindowTitle(tr("Fehler!"));
+			QHBoxLayout sFDlayout(saveFailedDialog);
+			QLabel *sFDLabel = new QLabel(tr("Writing failed! Check your rights for this folder!"),saveFailedDialog);
+			sFDlayout.addWidget(sFDLabel);
+			QPushButton *ok = new QPushButton ("OK", saveFailedDialog);
+			sFDlayout.addWidget(ok);
 			connect(ok, SIGNAL(clicked()), saveFailedDialog, SLOT(deleteLater()));
 			return;
 		}
 	}
-	if(! QFile(save_bgi_filename).exists())
+	//if(! QFile(save_bgi_filename).exists())
+	//	{
+	qWarning() << "Copying Map Background File:" << QString(bgi_filename) << QString(save_bgi_filename).prepend("/").prepend(save_dir_string);
+		if(QFile(bgi_filename).copy(QString(save_bgi_filename).prepend("/").prepend(save_dir_string)))
 		{
-		QFile(bgi_filename).copy(QString(save_bgi_filename).prepend(save_dir_string));
+		qWarning() << "Success!";
 		}
+		else qWarning() << "Failed!!";
+	//	}
 	
 	QFile savefile(save_filename);
 	savefile.open(QIODevice::WriteOnly);
 	QTextStream savestream(&savefile);
 	savestream << "<map>\n";
 
-  savestream << "<maphintergrund>\n";
+  savestream << "<maphintergrund>";
   savestream << save_bgi_filename;
-  savestream << "\n</maphintergrund>\n";
+  savestream << "</maphintergrund>\n";
   if(!cityname.isEmpty())
   {
-  savestream << "<stadtname>\n";
+  savestream << "<stadtname>";
   savestream << cityname;
-  savestream << "\n</stadtname>\n";
+  savestream << "</stadtname>\n";
   }
-  savestream << "<mapbreite>\n";
+  savestream << "<mapbreite>";
   savestream << mapSize.width();
-  savestream << "\n</mapbreite>\n";
-  savestream << "<maphoehe>\n";
+  savestream << "</mapbreite>\n";
+  savestream << "<maphoehe>";
   savestream << mapSize.height();
-  savestream << "\n</maphoehe>\n";
+  savestream << "</maphoehe>\n";
   //hier die Mapprops reinschreiben (Groesse, File, etc.)
   QGraphicsItem *saveitem;
   foreach(saveitem, itemList)
  {
 	 savestream << "<objekt>\n";
-	 savestream << "<objektfunktion>\n";
+	 savestream << "<objektfunktion>";
 	 savestream << saveitem->data(0).toString();
-	 savestream << "\n</objektfunktion>\n";
+	 savestream << "</objektfunktion>\n";
 	 if(!saveitem->data(1).toString().isEmpty())
 	 {
-		  savestream << "<objekttooltip>\n";
+		 savestream << "<objekttooltip>";
 		 savestream << saveitem->data(1).toString();
-		 savestream << "\n</objekttooltip>\n";
+		 savestream << "</objekttooltip>\n";
  	 }
 	  {
 		QString img_filename = saveitem->data(2).toString();
@@ -145,31 +157,35 @@ void MapFrame::saveMap(QString save_filename)
 		}
 		img_filename = img_filename.right(y).prepend("img");
 
-		savestream << "<objektdatei>\n";
+		savestream << "<objektdatei>";
 		savestream << img_filename;
-		savestream << "\n</objektdatei>\n";
+		savestream << "</objektdatei>\n";
 		
-		if(! QFile(img_filename).exists())
+		//if(! QFile(img_filename).exists())
+		//{
+		qWarning() << "Copying Object File:" << saveitem->data(2).toString() << QString(img_filename).prepend("/").prepend(save_dir_string);
+		if(QFile(saveitem->data(2).toString()).copy(QString(img_filename).prepend("/").prepend(save_dir_string)))
 		{
-		qWarning() << "Copying Object File:" << QString(img_filename).prepend(save_dir_string);
-		QFile(saveitem->data(2).toString()).copy(QString(img_filename).prepend(save_dir_string));
+		qWarning() << "Success!";
 		}
+		else qWarning() << "Failed!";
+		//}
 		
 	  }
 	 
 
 
-  	savestream << "<objektpositionx>\n";
+  	savestream << "<objektpositionx>";
  	savestream << saveitem->data(3).toInt();
- 	savestream << "\n</objektpositionx>\n";
+ 	savestream << "</objektpositionx>\n";
 
- 	savestream << "<objektpositiony>\n";
+ 	savestream << "<objektpositiony>";
  	savestream << saveitem->data(4).toInt();
- 	savestream << "\n</objektpositiony>\n";
+ 	savestream << "</objektpositiony>\n";
  	
- 	savestream << "<objekthohe>\n";
+ 	savestream << "<objekthoehe>";
  	savestream << saveitem->zValue();
- 	savestream << "\n</objekthohe>\n";
+ 	savestream << "</objekthoehe>\n";
  	savestream << "</objekt>\n";
  }
  savestream << "</map>";
@@ -177,6 +193,431 @@ void MapFrame::saveMap(QString save_filename)
  
  void MapFrame::loadMap(QString load_filename)
  {
+ newMap();
+ 
+	QDir dir;
+	dir = QDir().current();
+
+	QString mapdir = QFileInfo(load_filename).path().append("/");
+
+
+	QGraphicsScene *tempsc = new QGraphicsScene;
+	setScene(tempsc);
+
+	szene->clear();
+	delete szene;
+	qWarning() << "Szene geloescht";
+
+
+	szene = new QGraphicsScene();
+
+
+	QFile file(load_filename);		//Map-XML-Lesen
+	if(file.exists())
+	{
+		qWarning() << "Datei existiert" ;
+		enum stati	{
+				null,
+				objekt,
+				o_fkt,
+				o_tooltip,
+				o_datei,
+				o_posx,
+				o_posy,
+				o_hoehe,
+				m_prop,			// Allgemein: Mapeigenschaften
+				m_stadtname,
+				m_img,
+				m_nord,			//noerdliche angrenzende Map
+				m_west,			//westliche a M
+				m_sued,			//suedliche a M
+				m_ost,			//oestliche a M
+				m_grx,			//breite
+				m_gry,			//hoehe
+				m_typ,
+				} status = null;	// status als dieses enum: zeigt an, was fuer ein Wert als naechstes ausgelesen wird
+
+		cityname = QString();
+		QString ofkt = QString();				//Funktion des Objektes
+		QString otooltip = QString();				//name/tooltip des objekts
+		QString odatei = QString();				//name des Bildes des Objekts
+		
+		int oposx = -1;				//x-Koordinate
+		int oposy = -1;				//y-Koordinate
+		double ohoehe;
+		bool reading = true;
+
+		file.open(QIODevice::ReadOnly);
+		QXmlStreamReader reader(&file);
+		while (reading) 
+		{
+		reader.readNext();
+		switch(reader.tokenType())
+		{
+			case QXmlStreamReader::StartElement:
+			{
+			qWarning() << "\nStart:\t" <<reader.qualifiedName().toString();
+				if(reader.qualifiedName().toString() =="mapprop")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_prop;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="stadtname")
+				{
+				status=m_stadtname;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="maphintergrund")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_img;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="mapnord")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_nord;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="mapost")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_ost;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="mapsued")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_sued;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="mapwest")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_west;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="mapbreite")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_grx;
+				break;
+				}
+				if(reader.qualifiedName().toString() =="maphoehe")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_gry;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() =="maptyp")
+				{
+// 				qWarning() << "Start: mapprops";
+				status=m_typ;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() =="objekt")
+				{
+// 				qWarning() << "objekt";
+				status=objekt;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() == "objektfunktion")
+				{
+// 				qWarning() << "o_fkt";
+				status = o_fkt;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() == "objekttooltip")
+				{
+// 				qWarning() << "o_tooltip";
+				status = o_tooltip;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() == "objektdatei")
+				{
+// 				qWarning() << "o_datei";
+				status = o_datei;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() == "objektpositionx")
+				{
+// 				qWarning() << "o_posx";
+				status = o_posx;
+				break;
+				}
+
+				if(reader.qualifiedName().toString() == "objektpositiony")
+				{
+// 				qWarning() << "o_posy";
+				status = o_posy;
+				break;
+				}
+				
+				if(reader.qualifiedName().toString() == "objekthoehe")
+				{
+// 				qWarning() << "o_posy";
+				status = o_hoehe;
+				break;
+				}
+				break;
+			}
+
+			case QXmlStreamReader::Invalid:
+			{
+			qWarning() << "Error:" << reader.errorString() <<"\nEnde Error" ;
+			break;
+			}
+
+			case QXmlStreamReader::Characters:
+			{
+// 				qWarning() << "Chars:" <<reader.text().toString();
+				//Tags ohne Inhalt - nur mit Unterkategorien
+				switch(status)
+				{
+				case m_prop:
+					break;
+				case m_stadtname:
+				{
+				cityname = reader.text().toString();
+				break;
+				}
+				case m_img:
+				{
+				bgi_filename = reader.text().toString();
+				bgi_filename.prepend(mapdir);
+ 				QFile mapimgfile(bgi_filename);
+ 					if(mapimgfile.exists())
+ 					{
+					szene->setBackgroundBrush(QBrush(QImage(bgi_filename)));
+					}
+					else
+						qWarning() << "Maphintergrund:" << bgi_filename << "nicht gefunden!" << mapdir;
+				break;
+				}
+
+				case m_nord:
+				{
+				mapnorth = reader.text().toString();
+
+				qWarning() << "Nord-Map:" << mapnorth;
+				if(!QFile(mapnorth).exists())
+					{
+					qWarning() << mapnorth << "Existiert nicht";
+					mapnorth = QString();
+					}
+				break;
+				}
+
+				case m_ost:
+				{
+				mapeast = reader.text().toString();
+				qWarning() << "Ost-Map:" << mapeast;
+				if(!QFile(mapeast).exists())
+					{
+					qWarning() << mapeast << "Existiert nicht";
+					mapeast = QString();
+					}
+				break;
+				}
+
+				case m_sued:
+				{
+				mapsouth = reader.text().toString();
+				qWarning() << "Sued-Map:" << mapsouth;
+				if(!QFile(mapsouth).exists())
+					{
+					qWarning() << mapsouth << "Existiert nicht";
+					mapsouth = QString();
+					}
+				break;
+				}
+
+				case m_west:
+				{
+				mapwest = reader.text().toString();
+				qWarning() << "West-Map:" << mapwest;
+				if(!QFile(mapwest).exists())
+					{
+					qWarning() << mapwest << "Existiert nicht";
+					mapwest = QString();
+					}
+				break;
+				}
+
+				case m_grx:
+				{
+					mapSize.setWidth(reader.text().toString().toInt());
+					break;
+				}
+				case m_gry:
+				{
+					mapSize.setHeight(reader.text().toString().toInt());
+					break;
+				}
+				case m_typ:
+				{
+					if(reader.text().toString() == "sea")
+					{
+						
+					}
+					if(reader.text().toString() == "coast")
+					{
+						
+					}
+					if(reader.text().toString() == "land")
+					{
+						
+					}
+
+				}
+
+				case objekt:
+					break;
+				case o_fkt:
+				{
+					ofkt = reader.text().toString();
+					qWarning() << "\tObjektfkt" << ofkt;
+					break;
+				}
+				case o_tooltip:
+				{
+					otooltip = reader.text().toString();
+					qWarning() << "\tObjekttooltip" << otooltip;
+					break;
+				}
+				case o_datei:
+				{
+					odatei = reader.text().toString();
+					qWarning() << "\tBild:" << odatei;
+					break;
+				}
+				case o_posx:
+				{
+					oposx = reader.text().toString().toInt();
+					qWarning() << "\tPosX:" << oposx;
+					break;
+				}
+				case o_posy:
+				{
+					oposy = reader.text().toString().toInt();
+					qWarning() << "\tPosY" << oposy;
+					break;
+				}
+				case o_hoehe:
+				{
+					ohoehe = reader.text().toString().toDouble();
+					qWarning() << "\tPosY" << ohoehe;
+					break;
+				}
+				
+				default:
+					break;
+				}
+				break;
+			}
+			case QXmlStreamReader::EndElement:
+			{
+				qWarning() << "Ende :"<< reader.qualifiedName().toString();
+				if(reader.qualifiedName().toString() == "objekt" && !ofkt.isEmpty() && !odatei.isEmpty())
+	//jetzt zeichnen: habe alle Eigenschaften des Objektes erhalten?
+				{
+// 						if(!odatei.contains("img"))
+// 						{ odatei.prepend(mapdir);
+// 						}
+// 						else
+// 							odatei.prepend(":");
+					odatei = odatei.prepend(mapdir);
+					qWarning() << odatei << ofkt;
+					QFile bild(odatei);
+					if(bild.exists())
+					{
+// 						int static i;
+						qWarning() << "Malen ....";
+// #ifdef _RELEASE_
+						bool gemalt = false;
+						if(ofkt == "Uhr")
+						{
+
+						QGraphicsItem *zb = szene->addPixmap((QPixmap(odatei)));
+						zb->setPos(oposx,oposy);
+						zb->setToolTip(otooltip);
+						zb->setZValue(0.5);
+						zb->setData(0,QVariant(QString("Ziffernblatt")));
+						QGraphicsItem *gz = szene-> addPixmap((QPixmap(":/img/objekte/zeiger1.png")));
+						gz->setPos(oposx+21,oposy+4);
+						gz->setToolTip(tr("grosser Zeiger"));
+						gz->setZValue(2);
+						gz->setData(0,QVariant(QString("grosser Zeiger")));
+
+						QGraphicsItem *kz = szene-> addPixmap( (QPixmap(":/img/objekte/zeiger2.png")));
+						kz->setPos(oposx+23,oposy+9);
+						kz->setToolTip(tr("kleiner Zeiger"));
+						kz->setZValue(1);
+						kz->setData(0,QVariant(QString("kleiner Zeiger")));
+						gemalt = true;
+						}
+
+
+						if(!gemalt)
+						{
+// 						QGraphicsItem *geb = szene->addPixmap((QPixmap(odatei)));
+// 						geb->setPos(oposx,oposy);
+// 						geb->setData(0,QVariant(ofkt));
+// 
+// 						if(!otooltip.isEmpty())
+// 						{
+// 							geb->setToolTip(otooltip);
+// 						}
+// 
+// 						ofkt = QString();
+// 						otooltip = QString();
+// 						odatei = QString();
+// 						geb->setZValue(0.1);
+						object_typ = ofkt;
+						object_filename = odatei;
+						object_tooltip = otooltip;
+						ziel = QPoint(oposx, oposy);
+						createObjectDialog = new QDialog();
+						newObject(ofkt, odatei, otooltip);
+						}
+					}
+					else
+					{
+					qWarning() << "Bild" << ofkt << "nicht gefunden";
+					}
+				}
+				status=null;
+				break;
+
+			}
+			default:
+				break;
+
+		}
+		if(reader.atEnd() || (reader.tokenType() == QXmlStreamReader::EndElement && reader.qualifiedName().toString() =="map"))
+		{
+		reading = false;
+		}
+
+		}
+	
+		if (reader.hasError()) {
+		qWarning() << reader.errorString();
+	}
+	setScene(szene);
+	delete tempsc;
+	
+	
+}
+ 
+ 
  }
  
  void MapFrame::mousePressEvent(QMouseEvent *event)
@@ -324,9 +765,16 @@ object_filename = fd_filename;
 	}
 	else
 	{
-	QDialog *missingArgs = new QDialog(this);
-	missingArgs->setModal(true);
-	missingArgs->show();
+		QDialog *missingArgs = new QDialog(this);
+		missingArgs->setModal(true);
+		missingArgs->setWindowTitle(tr("Fehler!"));
+		QHBoxLayout mAlayout(missingArgs);
+		QLabel *mALabel = new QLabel(tr("Bitte Objekteigenschaften: \"Funktion\" und \"Bilddatei\" angeben!\n (Funktionsbox bitte einmal anklicken, um Auswahl zu treffen.)"), missingArgs);
+		mAlayout.addWidget(mALabel);
+		QPushButton *ok = new QPushButton ("OK", missingArgs);
+		mAlayout.addWidget(ok);
+		connect(ok, SIGNAL(clicked()), missingArgs, SLOT(deleteLater()));
+		missingArgs->show();
 	}
 }
 

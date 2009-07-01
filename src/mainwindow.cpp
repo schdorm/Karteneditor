@@ -112,7 +112,13 @@ void MainWindow::createActions()
 
  void MainWindow::open()
  {
-
+ MapView->fileDialog(NameFilters::Map);
+connect(MapView->fd, SIGNAL(accepted()), this, SLOT(openMap()));
+ }
+ 
+ void MainWindow::openMap()
+ {
+ MapView->loadMap(MapView->fd_filename);
  }
 
  void MainWindow::save()
@@ -278,8 +284,10 @@ void MainWindow::updateItemList(int selectedItemRow)
 		SideBar->YBox->setEnabled(true);
 		SideBar->XBox->setEnabled(true);
 		SideBar->ZBox->setEnabled(true);
+		
 		SideBar->XBox->setValue(MapView->itemList.value(selectedItemRow - 6)->x());
 		SideBar->YBox->setValue(MapView->itemList.value(selectedItemRow - 6)->y());
+		SideBar->ZBox->setValue(MapView->itemList.value(selectedItemRow - 6)->zValue());
 
 		SideBar->editToolTip->setText(MapView->itemList.value(selectedItemRow - 6)->data(1).toString());
 		

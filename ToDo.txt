@@ -1,0 +1,10 @@
+ToDo:
+
+
+ - Add object-types
+
+ - (Buxfiging)
+ 
+ - move Objects with MouseMoveEvent
+ 
+ - ....

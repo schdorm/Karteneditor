@@ -1,0 +1,29 @@
+\documentclass[11pt,a4paper]{article} 
+\usepackage[ansinew]{inputenc} %für Codierung
+\usepackage[T1]{fontenc} %Wegen Umlauten
+\usepackage{lmodern} % Verhinderung von Pixelschrift
+\usepackage[ngerman]{babel} %Neue Rechtschreibung - Prüfung
+
+%-----------------Formatierung--------------------------------------------
+\setlength{\parindent}{0pt} % Kein Einzug
+\setlength{\parskip}{4pt} %Neue Zeile nach Absatz
+%fhypenpenalty=100 %Trennungsverhalten
+%\baselineskip5pt %Zeilenabstand
+\usepackage{geometry} %Seitenlayout, -abstände
+\geometry{a4paper,bottom=3.5cm} %left, right, bottom, top
+\usepackage{mdwlist} % itemize* enumerate* für engen Abstand zwischen /item
+%-----------------Kopfzeile---------------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+%\fancyhf{} % löscht alle Felder
+\fancyhead[L]{\small{\textbf{\autor}}}
+\fancyhead[C]{\small{\textbf{\protothema}}}
+%-------------------------------------------------------------------------
+
+
+\begin{document}
+ \makeindex
+ \section{Installation}
+ \section{FAQ}
+ 
+\end{document}

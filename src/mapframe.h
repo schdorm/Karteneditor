@@ -47,7 +47,8 @@
  void initMap();
  QGraphicsScene *szene;
 
- QGraphicsPixmapItem *activeItem;
+ QGraphicsItem *activeItem;
+ bool itemSelected;
  QString object_typ;
  QString object_filename;
  QString object_tooltip;
@@ -78,6 +79,7 @@
  
  protected:
  void mousePressEvent(QMouseEvent*);
+ void mouseMoveEvent(QMouseEvent*);
  
  signals:
  void newObjectCreated();

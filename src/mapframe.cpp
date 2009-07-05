@@ -53,6 +53,7 @@
  szene->clear();
  mapSize = QSize(1000,1000);
  setSceneRect(0,0,1000,1000);
+ itemSelected = false;
  }
 
 void MapFrame::saveMap(QString save_filename)
@@ -622,6 +623,8 @@ void MapFrame::saveMap(QString save_filename)
  
  void MapFrame::mousePressEvent(QMouseEvent *event)
  {
+ if(!itemSelected)
+ {
  object_tooltip = QString();
  object_filename = QString();
  fd_filename = QString();
@@ -723,16 +726,47 @@ void MapFrame::saveMap(QString save_filename)
 	{
 		if(QGIlistAtClick.size() == 1)
 		{
-			
+			activeItem = QGIlistAtClick.first();
+			itemSelected = true;
 		}
 
 
 		if(QGIlistAtClick.size() >1)
 		{
-			
+			QDialog *selectObjectDialog = new QDialog(this);
+			selectObjectDialog->setModal(true);
+			QComboBox *objectList = new QComboBox(selectObjectDialog);
+			QStringList objectNameList;
+			foreach(activeItem, QGIlistAtClick){
+			objectNameList << QString(activeItem->data(0).toString()).append(QString(" ").append(activeItem->data(1).toString()).append(QString(" ...").append(activeItem->data(2).toString().right(15))));
+			}
+			objectList->addItems(objectNameList) ;
+			QPushButton *ok = new QPushButton ("Ok", selectObjectDialog);
+			QHBoxLayout *sodlayout = new QHBoxLayout(selectObjectDialog);
+			sodlayout->addWidget(objectList);
+			sodlayout->addWidget(ok);
+			selectObjectDialog->setLayout(sodlayout);
+			selectObjectDialog -> show();
+			connect(ok, SIGNAL(clicked()), selectObjectDialog, SLOT(deleteLater()));
 		}
 
 	}
+}
+else
+	itemSelected = false;
+
+}
+
+
+void MapFrame::mouseMoveEvent(QMouseEvent *MME)
+{
+static int oldxpos, oldypos;
+
+if(!(oldxpos == 0 && oldypos == 0) && itemSelected)
+	activeItem->moveBy( MME->x() - oldxpos,  MME->y() - oldypos);
+
+oldxpos = MME->x();
+oldypos = MME->y();
 }
 
 void MapFrame::setTyp(QString text)

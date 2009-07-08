@@ -32,6 +32,10 @@
  #include <QtGui/QPushButton>
  #include <QtGui/QLineEdit>
  #include <QtGui/QSpinBox>
+ 
+ #include <QtGui/QScrollBar>
+ 
+ #include <QtGui/QKeyEvent>
 
  #include <QtCore/QStringList> 
  #include <QtCore/QSignalMapper>
@@ -43,9 +47,21 @@
  
  void MapFrame::initMap()
  {
+ qWarning() << "MapFrame::initMap()";
  szene = new QGraphicsScene();
  setScene(szene);
  newMap();
+ townhall = tr("Rathaus");
+ market = tr("Markt");
+ church = tr("Kirche");
+ port = tr("Hafen");
+ office = tr("Kontor");
+ bank = tr("Darlehensgeber");
+ tavern = tr("Kneipe");
+ land = tr("Landflaechen");
+ land2 = tr("\"boese\" Untiefen"); // Objekte, bei denen eine Kollision mit dem Schiff Schaden am Schiff verursacht.
+ mapdecoration = tr("Mapdeko");
+ itemfktList << townhall << market << church << port << office << bank << tavern << land << land2 << mapdecoration;
  }
 
  void MapFrame::newMap()
@@ -54,10 +70,12 @@
  mapSize = QSize(1000,1000);
  setSceneRect(0,0,1000,1000);
  itemSelected = false;
+ szene->setBackgroundBrush(QBrush());
  }
 
 void MapFrame::saveMap(QString save_filename)
 {
+qWarning() << "Saving Map ..." << save_filename;
 	if(!save_filename.endsWith(".ohm"))
 	{
 		save_filename.append(".ohm");
@@ -71,21 +89,32 @@ void MapFrame::saveMap(QString save_filename)
 	  {
 		int n = 0;
 		int y = 0;
+		if(!save_bgi_filename.isEmpty())
+		{
 		while(n < 1)
 		{
 			y++;
 			n = save_bgi_filename.right(y).count("/");
+			if(y > save_bgi_filename.size())
+			{
+			n=1;
+			qWarning() << "Aborted";
+			}
+			qWarning() << "Schleife 1";
 		}
 		save_bgi_filename = save_bgi_filename.right(y).prepend("img");
 		n = 0;
 		y = 0;
+		}
 		while(n < 1)
 		{
 			y++;
 			n = save_dir_string.right(y).count("/");
+			
 		}
 		save_dir_string = save_dir_string.left(save_dir_string.size() - y);
 	  }
+	  qWarning() << "Dir: " << save_dir_string << "\tFile: "<<save_filename;
 	QDir save_dir = QDir(save_dir_string);
 	if(!save_dir.cd("img"))
 	{
@@ -103,8 +132,11 @@ void MapFrame::saveMap(QString save_filename)
 			return;
 		}
 	}
+	
 	//if(! QFile(save_bgi_filename).exists())
 	//	{
+	if(!bgi_filename.isEmpty())
+	{
 	qWarning() << "Copying Map Background File:" << QString(bgi_filename) << QString(save_bgi_filename).prepend("/").prepend(save_dir_string);
 		if(QFile(bgi_filename).copy(QString(save_bgi_filename).prepend("/").prepend(save_dir_string)))
 		{
@@ -112,7 +144,9 @@ void MapFrame::saveMap(QString save_filename)
 		}
 		else qWarning() << "Failed!!";
 	//	}
-	
+	}
+	else
+	qWarning() << "No map background setted";
 	QFile savefile(save_filename);
 	savefile.open(QIODevice::WriteOnly);
 	QTextStream savestream(&savefile);
@@ -177,11 +211,11 @@ void MapFrame::saveMap(QString save_filename)
 
 
   	savestream << "<objektpositionx>";
- 	savestream << saveitem->data(3).toInt();
+ 	savestream << saveitem->x();
  	savestream << "</objektpositionx>\n";
 
  	savestream << "<objektpositiony>";
- 	savestream << saveitem->data(4).toInt();
+ 	savestream << saveitem->y();
  	savestream << "</objektpositiony>\n";
  	
  	savestream << "<objekthoehe>";
@@ -483,7 +517,7 @@ void MapFrame::saveMap(QString save_filename)
 					break;
 				case o_fkt:
 				{
-					ofkt = reader.text().toString();
+					ofkt = reader.text().toString().toInt();
 					qWarning() << "\tObjektfkt" << ofkt;
 					break;
 				}
@@ -581,12 +615,12 @@ void MapFrame::saveMap(QString save_filename)
 // 						otooltip = QString();
 // 						odatei = QString();
 // 						geb->setZValue(0.1);
-						object_typ = ofkt;
+						object_typ = ofkt.toInt();
 						object_filename = odatei;
 						object_tooltip = otooltip;
 						ziel = QPoint(oposx, oposy);
 						createObjectDialog = new QDialog();
-						newObject(ofkt, odatei, otooltip);
+						createObject();
 						}
 					}
 					else
@@ -614,25 +648,26 @@ void MapFrame::saveMap(QString save_filename)
 	}
 	setScene(szene);
 	delete tempsc;
-	
+	setSceneRect(0,0,mapSize.width(),mapSize.height());
 	
 }
  
  
  }
  
- void MapFrame::mousePressEvent(QMouseEvent *event)
+ 
+ void MapFrame::newObjectDialog_ext()
  {
- if(!itemSelected)
+ newObjectDialog(QPoint(100,100));
+ }
+ 
+ 
+ void MapFrame::newObjectDialog(QPoint destination)
  {
- object_tooltip = QString();
- object_filename = QString();
- fd_filename = QString();
- ziel = event->pos();
-	QList<QGraphicsItem *> QGIlistAtClick = items(event->pos());
-	if(QGIlistAtClick.isEmpty())
-	{
-		createObjectDialog = new QDialog();
+ ziel = destination;
+ ziel.setX(ziel.x() + horizontalScrollBar()->value());
+ ziel.setY(ziel.y() + verticalScrollBar()->value());
+ 		createObjectDialog = new QDialog();
 		createObjectDialog->setModal(true);
 		createObjectDialog->setWindowTitle(tr("Create new Object ..."));
 
@@ -655,8 +690,9 @@ void MapFrame::saveMap(QString save_filename)
 		cODlayout->addWidget(labelfkt, 1, 0, 1, 1);
 
 		QComboBox *fkt = new QComboBox(createObjectDialog);
-		fkt->addItem("land");
-		fkt->addItem("markt");
+
+//		itemfktList << townhall << market << church << port << office << bank << tavern << land << land2 << mapdecoration;
+		fkt->addItems(itemfktList);
 		cODlayout->addWidget(fkt, 1, 1,1,4);
 
 		QLabel *labeltt = new QLabel(createObjectDialog);
@@ -721,13 +757,129 @@ void MapFrame::saveMap(QString save_filename)
 		connect(objToolTip, SIGNAL(textEdited(QString)), this, SLOT(setToolTipString(QString)));
 		connect(XBox_MV, SIGNAL(valueChanged(int)), this, SLOT(setXPos(int)));
 		connect(YBox_MV, SIGNAL(valueChanged(int)), this, SLOT(setYPos(int)));
+		setTyp(market);
+ }
+ 
+ void MapFrame::mousePressEvent(QMouseEvent *event)
+ {
+ qWarning() << "MapFrame::mousePressEvent(QMouseEvent *event)";
+ if(!itemSelected)
+ {
+ object_tooltip = QString();
+ object_filename = QString();
+ fd_filename = QString();
+ ziel = event->pos();
+	QList<QGraphicsItem *> QGIlistAtClick = items(event->pos());
+	if(QGIlistAtClick.isEmpty())
+	{
+		newObjectDialog(ziel);
+// 		createObjectDialog = new QDialog();
+// 		createObjectDialog->setModal(true);
+// 		createObjectDialog->setWindowTitle(tr("Create new Object ..."));
+// 
+// 		QGridLayout *cODlayout = new QGridLayout(createObjectDialog);
+// 
+// 		QLabel *labelimg = new QLabel(createObjectDialog);
+// 		labelimg->setText(tr("Image File"));
+// 		cODlayout->addWidget(labelimg, 0, 0, 1, 1);
+// 
+// 		QLabel *filelabel = new QLabel(createObjectDialog);
+// 		filelabel->setFrameShape(QFrame::Box);
+// 		cODlayout->addWidget(filelabel, 0, 1, 1, 3);
+// 
+// 		QPushButton *selectFileButton = new QPushButton ("...",createObjectDialog);
+// 		cODlayout->addWidget(selectFileButton, 0, 4, 1, 1);
+// 
+// 
+// 		QLabel *labelfkt = new QLabel(createObjectDialog);
+// 		labelfkt->setText(tr("Object function"));
+// 		cODlayout->addWidget(labelfkt, 1, 0, 1, 1);
+// 
+// 		QComboBox *fkt = new QComboBox(createObjectDialog);
+// 
+// //		itemfktList << townhall << market << church << port << office << bank << tavern << land << land2 << mapdecoration;
+// 		fkt->addItems(itemfktList);
+// 		cODlayout->addWidget(fkt, 1, 1,1,4);
+// 
+// 		QLabel *labeltt = new QLabel(createObjectDialog);
+// 		labeltt->setText(tr("Object tooltip (optional)"));
+// 		cODlayout->addWidget(labeltt, 2, 0, 1, 1);
+// 
+// 		QLineEdit *objToolTip = new QLineEdit(createObjectDialog);
+// 		objToolTip->setMaxLength(25);
+// 		cODlayout->addWidget(objToolTip, 2, 1, 1, 4);
+// 		
+// 		QSpinBox *XBox_MV = new QSpinBox(createObjectDialog);
+// 		XBox_MV->setRange(0, mapSize.width());
+// 		XBox_MV->setValue(ziel.x());
+// 		
+// 		QSpinBox *YBox_MV = new QSpinBox(createObjectDialog);
+// 		YBox_MV->setRange(0, mapSize.height());
+// 		YBox_MV->setValue(ziel.y());
+// 		
+// 		QHBoxLayout spinboxlayout;
+// //		spinboxlayout.addSpacing(20);
+// 		QLabel *XLabel = new QLabel(tr("X-Pos:"),createObjectDialog);
+// 		spinboxlayout.addWidget(XLabel);
+// 		spinboxlayout.addWidget(XBox_MV);
+// //		spinboxlayout.addSpacing(40);
+// 		QLabel *YLabel = new QLabel(tr("Y-Pos:"),createObjectDialog);
+// 		spinboxlayout.addWidget(YLabel);
+// 		spinboxlayout.addWidget(YBox_MV);
+// //		spinboxlayout.addSpacing(20);
+// 		cODlayout->setRowStretch(3,2);
+// 		cODlayout->addLayout(&spinboxlayout, 4, 0, 2, 5);
+// 
+// 		QPushButton *ok = new QPushButton(tr("Ok"), createObjectDialog);
+// 		QPushButton *abort = new QPushButton(tr("Abort"), createObjectDialog);
+// 				
+// 		QHBoxLayout buttonlayout;
+// 		buttonlayout.addSpacing(20);
+// 		buttonlayout.addWidget(ok);
+// 		buttonlayout.addSpacing(40);
+// 		buttonlayout.addWidget(abort);
+// 		buttonlayout.addSpacing(20);
+// 		cODlayout->setRowStretch(5,2);
+// 		cODlayout->addLayout(&buttonlayout, 6, 0, 2, 5);
+// 
+// 
+// 
+// 		createObjectDialog->setLayout(cODlayout);
+// 		createObjectDialog->show();
+// 
+// 		connect(ok, SIGNAL(clicked()), this, SLOT(newObject()));
+// 		connect(abort, SIGNAL(clicked()), createObjectDialog, SLOT(close()));
+// 		connect(abort, SIGNAL(clicked()), createObjectDialog, SLOT(deleteLater()));
+// 
+// 		QSignalMapper *selectFileMapper = new QSignalMapper(createObjectDialog);
+// 		selectFileMapper->setMapping(selectFileButton, NameFilters::Img);
+// 		
+// 		connect(selectFileButton, SIGNAL(clicked()), selectFileMapper, SLOT(map()));
+// 		connect(selectFileMapper,SIGNAL(mapped(int)),this, SLOT(fileDialog(int)));
+// 		
+// 		connect(this, SIGNAL(fileStringChanged(QString)), filelabel, SLOT(setText(QString)));
+// 
+// 		connect(fkt, SIGNAL(currentIndexChanged(QString)), this, SLOT(setTyp(QString)));
+// 		connect(objToolTip, SIGNAL(textEdited(QString)), this, SLOT(setToolTipString(QString)));
+// 		connect(XBox_MV, SIGNAL(valueChanged(int)), this, SLOT(setXPos(int)));
+// 		connect(YBox_MV, SIGNAL(valueChanged(int)), this, SLOT(setYPos(int)));
+// 		setTyp(market);
 	}
 	else
 	{
 		if(QGIlistAtClick.size() == 1)
 		{
-			activeItem = QGIlistAtClick.first();
+			if(activeItem == QGIlistAtClick.first())
+			{
 			itemSelected = true;
+			
+			}
+			else
+			{
+			activeItem = QGIlistAtClick.first();
+			emit objectSelected(activeItem);
+			}
+			
 		}
 
 
@@ -737,8 +889,9 @@ void MapFrame::saveMap(QString save_filename)
 			selectObjectDialog->setModal(true);
 			QComboBox *objectList = new QComboBox(selectObjectDialog);
 			QStringList objectNameList;
-			foreach(activeItem, QGIlistAtClick){
-			objectNameList << QString(activeItem->data(0).toString()).append(QString(" ").append(activeItem->data(1).toString()).append(QString(" ...").append(activeItem->data(2).toString().right(15))));
+			foreach(activeItem, QGIlistAtClick)
+			{
+				objectNameList << QString(activeItem->data(17).toString()).append(QString("; ").append(activeItem->data(1).toString()).append(QString(" ...").append(activeItem->data(2).toString().right(15))));
 			}
 			objectList->addItems(objectNameList) ;
 			QPushButton *ok = new QPushButton ("Ok", selectObjectDialog);
@@ -748,54 +901,158 @@ void MapFrame::saveMap(QString save_filename)
 			selectObjectDialog->setLayout(sodlayout);
 			selectObjectDialog -> show();
 			connect(ok, SIGNAL(clicked()), selectObjectDialog, SLOT(deleteLater()));
+			connect(ok, SIGNAL(clicked()), this, SLOT(selectObject()));
+			connect(objectList, SIGNAL(activated(QString)), this, SLOT(getObjectID(QString)));
+			getObjectID(objectList->currentText());
+			qgilist = QGIlistAtClick;
 		}
 
 	}
 }
 else
+{
 	itemSelected = false;
-
+	emit objectMoved();
+}
 }
 
 
 void MapFrame::mouseMoveEvent(QMouseEvent *MME)
 {
+curser = MME->pos();
+// setStatusTip(QString("%1 %2").arg(curser.x(), curser.y()));
+
+//qWarning() << "MapFrame::mouseMoveEvent(QMouseEvent *MME)";
 static int oldxpos, oldypos;
 
-if(!(oldxpos == 0 && oldypos == 0) && itemSelected)
-	activeItem->moveBy( MME->x() - oldxpos,  MME->y() - oldypos);
+if(!(oldxpos == 0 && oldypos == 0) && itemSelected /*&& (oldtime == time(NULL) || oldtime == time(NULL) - 1)*/)
+{
+ 	activeItem->moveBy( MME->x() - oldxpos,  MME->y() - oldypos);
+	emit objectMoved();
 
+}
 oldxpos = MME->x();
 oldypos = MME->y();
 }
 
+
+void MapFrame::mouseReleaseEvent(QMouseEvent *event)
+{
+if(itemSelected)
+  {
+  itemSelected=false;
+  emit objectMoved();
+  }
+ 
+}
+
+void MapFrame::getObjectID(QString objname)
+{
+// QString copy = objname;
+int n = 0;
+while(!objname.left(n).contains(";"))
+{
+n++;
+}
+
+qWarning() << objname.left(n-1) << n;
+objectName = objname.left(n-1);
+}
+
+void MapFrame::selectObject()
+{
+itemSelected = true;
+QGraphicsItem *it;
+foreach(it, qgilist)
+{
+if(it->data(17).toString() == objectName)
+{
+activeItem = it;
+return;
+}
+}
+
+
+}
+
 void MapFrame::setTyp(QString text)
 {
-object_typ = text;
+qWarning() << "MapFrame::setTyp(QString text)" << text;
+if(text == townhall)
+{
+object_typ = 0;
+}
+if(text == market)
+{
+object_typ = 1;
+}
+if(text == church)
+{
+object_typ = 2;
+}
+if(text == port)
+{
+object_typ = 3;
+}
+if(text == office)
+{
+object_typ = 4;
+}
+if(text == bank)
+{
+object_typ = 5;
+}
+if(text == tavern)
+{
+object_typ = 6;
+}
+if(text == land)
+{
+static int idi;
+object_typ = idi + 100;
+idi++;
+}
+if(text == land2)
+{
+static int idi;
+object_typ = idi + 500;
+idi++;
+}
+if(text == mapdecoration)
+{
+static int idi;
+object_typ = idi + 1000;
+idi++;
+}
+
 }
 
 void MapFrame::setXPos(int xpos)
 {
+qWarning() << "MapFrame::setXPos(int xpos)" << xpos;
 ziel.setX(xpos);
 }
 
 void MapFrame::setYPos(int ypos)
 {
+qWarning() << "MapFrame::setYPos(int ypos)" << ypos;
 ziel.setY(ypos);
 }
 
 void MapFrame::setToolTipString(QString ttstring)
 {
+qWarning() << "setToolTipString(QString ttstring)" << ttstring;
 object_tooltip = ttstring;
 }
 
 
 void MapFrame::newObject()
 {
+qWarning() << "MapFrame::newObject()";
 object_filename = fd_filename;
-	if(!object_typ.isEmpty() && !object_filename.isEmpty())
+	if(!object_filename.isEmpty())
 	{
-		newObject(object_typ, object_filename, object_tooltip);
+		createObject();
 	}
 	else
 	{
@@ -813,32 +1070,42 @@ object_filename = fd_filename;
 }
 
 
- void MapFrame::newObject(QString otyp, QString ofilename, QString otooltip)
+ void MapFrame::createObject()
  {
+ qWarning() << "MapFrame::createObject()";
  createObjectDialog->close();
  delete createObjectDialog;
-  QGraphicsPixmapItem *itemtoAdd = szene->addPixmap(QPixmap(ofilename));
+  QGraphicsPixmapItem *itemtoAdd = szene->addPixmap(QPixmap(object_filename));
   itemtoAdd->setPos(ziel);
-  itemtoAdd->setToolTip(otooltip);
-  itemtoAdd->setData(0, QVariant(otyp));
-  itemtoAdd->setData(1, QVariant(otooltip));
-  itemtoAdd->setData(2, QVariant(ofilename));
+  qWarning() << "ziel" << ziel;
+  itemtoAdd->setToolTip(object_tooltip);
+  itemtoAdd->setData(0, QVariant(object_typ));
+  itemtoAdd->setData(1, QVariant(object_tooltip));
+  itemtoAdd->setData(2, QVariant(object_filename));
   itemtoAdd->setData(3, QVariant(ziel.x()));
   itemtoAdd->setData(4, QVariant(ziel.y()));
+  static int objID;
+  itemtoAdd->setData(17, QVariant(objID));
+  objID++;
+  
   itemList << itemtoAdd;
-  emit newObjectCreated();
+  emit newObjectCreated(itemtoAdd);
+  activeItem = itemtoAdd;
+// QGraphicsItem *blah;
+//   
+// QGraphicsSvgItem *svgblah = new QGraphicsSvgItem("/home/christian/Dokumente/Physik/LaTeX/absorption_angepasst.svg", blah);
+// szene->addItem(svgblah);
+// svgblah->setPos(20,20);
+// QGraphicsSVGItem *blah = 
 
  }
 
 
-/*void MapFrame::fileDialog(int i)
-{
-fileDialog(i);
-}*/
 
 // void MapFrame::fileDialog(NameFilters::NFs filterarg)
 void MapFrame::fileDialog(int filterarg)
 {
+qWarning() << "MapFrame::fileDialog(int filterarg)" << filterarg;
 	fd = new QFileDialog(this, Qt::Dialog);
 //	fd->setFilter(filter);
 	fd->setModal(true);
@@ -872,6 +1139,16 @@ void MapFrame::fileDialog(int filterarg)
 
 void MapFrame::setFileString(QString fileString)
 {
+qWarning() << "MapFrame::setFileString(QString fileString)" << fileString;
 fd_filename = fileString;
 emit fileStringChanged(fileString);
+}
+
+
+void MapFrame::keyPressEvent(QKeyEvent *event)
+{
+  if(event->key() == Qt::Key_Delete)
+  {
+  emit SIG_deleteObject();
+  }
 }

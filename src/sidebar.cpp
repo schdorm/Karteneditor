@@ -23,28 +23,29 @@
  #include <QtGui/QVBoxLayout>
  #include <QtGui/QHBoxLayout>
  #include <QtGui/QFrame>
+ #include <QtGui/QKeyEvent>
 
  
  SideBarClass::SideBarClass()
  {
- 
+	staticListEntries << tr("Stadtname") << tr("Maphintergrund") << tr("Nordmap") << tr("Westmap") << tr("Suedmap") << tr("Ostmap");
+	
 	QVBoxLayout *SideBarLayout = new QVBoxLayout(this);
 
-	initMapEntriesList();
+	//initMapEntriesList();
 	itemListWidget = new QListWidget(this);
 	itemListWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-	itemListWidget->addItems(MapEntries);
+	itemListWidget->addItems(staticListEntries);
+	//itemListWidget->addItems(MapEntries);
 	SideBarLayout->addWidget(itemListWidget);
 	
 	QFrame *line = new QFrame(this);
 	line->setFrameShape(QFrame::HLine);
 	SideBarLayout->addWidget(line);
-
-	editToolTip = new QLineEdit(this);
-	editToolTip->setMaxLength(30);
-	SideBarLayout->addWidget(editToolTip );
-
-
+	
+	itemTyp = new QComboBox(this);
+	SideBarLayout->addWidget(itemTyp);
+	
 	QWidget *wid = new QWidget(this);
 	SideBarLayout->addWidget(wid);
 
@@ -56,6 +57,11 @@
 
 	selectFileButton = new QPushButton ("...", this);
 	objectFileLayout->addWidget(selectFileButton);
+	
+	editToolTip = new QLineEdit(this);
+	editToolTip->setMaxLength(30);
+	SideBarLayout->addWidget(editToolTip );
+
 	objectFileLayout->setStretch(0,5);
 
 	QWidget *wid2 = new QWidget(this);
@@ -67,25 +73,36 @@
 	objectFileLayout2->addWidget(XBox);
 	XBox->setRange(0,16383);
 	XBox->setValue(1000);
+	XBox->setToolTip(tr("X-Position des Objekts bzw. Mapbreite"));
 	
 	YBox = new QSpinBox(wid2);
 	objectFileLayout2->addWidget(YBox);
 	YBox->setRange(0,16383);
 	YBox->setValue(1000);
+	YBox->setToolTip(tr("Y-Position des Objekts bzw. Maphoehe"));
 	
 	ZBox = new QDoubleSpinBox(wid2);
 	objectFileLayout2->addWidget(ZBox);
 	ZBox->setRange(0,10);
 	ZBox->setValue(1);
 	ZBox->setDecimals(3);
+	ZBox->setToolTip(tr("Hoehe des Objekts"));
 
 
 //	SideBarLayout->addLayout(objectFileLayout);
 
  }
  
-void SideBarClass::initMapEntriesList()
- {
-	MapEntries.clear();
- 	MapEntries << "Stadtname" << "Maphintergrund" << "Nordmap" << "Westmap" << "Suedmap" << "Ostmap";
- }
+// void SideBarClass::initMapEntriesList()
+//  {
+// 	//MapEntries.clear();
+//  }
+
+void SideBarClass::keyPressEvent(QKeyEvent *event)
+{
+  if(event->key() == Qt::Key_Delete)
+  {
+  emit SIG_deleteObject();
+  }
+}
+

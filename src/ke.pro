@@ -13,4 +13,9 @@ CONFIG += warn_on \
 	  thread \
           qt
 
+ QT += svg
+
+RESOURCES += icons.qrc
+
 DESTDIR = bin/
+

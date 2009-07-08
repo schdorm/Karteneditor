@@ -25,6 +25,8 @@
  #include <QtGui/QGraphicsScene>
  #include <QtGui/QGraphicsItem>
  
+#include <QtSvg/QGraphicsSvgItem>
+ 
  #include <QtGui/QMouseEvent>
  #include <QtGui/QDialog>
  #include <QtGui/QFileDialog>
@@ -38,18 +40,42 @@
  Q_OBJECT
 
  public:
+ 
+ void initMap();
+ void newObjectDialog(QPoint);
+ 
  QString bgi_filename; // Backgroundimage-FN
  QString cityname;
  QString mapnorth, mapwest, mapsouth, mapeast;
- QList <QGraphicsItem *> itemList;
+ QList <QGraphicsPixmapItem *> itemList;
+ QList <QGraphicsItem *> qgilist;
+ QStringList itemfktList;
  QSize mapSize;
+ QPoint curser;
  
- void initMap();
+
+ 
  QGraphicsScene *szene;
+
+enum object_types_def
+{
+object_type_townhall,
+object_type_market,
+object_type_church,
+object_type_port,
+object_type_office,
+object_type_bank,
+object_type_tavern,
+object_type_namespacexyz
+
+};
+
+QString market, townhall, church, port, office, bank, tavern, land, land2, mapdecoration;
+
 
  QGraphicsItem *activeItem;
  bool itemSelected;
- QString object_typ;
+ int object_typ;
  QString object_filename;
  QString object_tooltip;
  int x, y;
@@ -59,14 +85,17 @@
  QDialog *createObjectDialog;
  QString fd_filename;
 
+QString objectName;
 
  public slots:
  void newMap();
  void saveMap(QString);
  void loadMap(QString);
 
+
+ void newObjectDialog_ext();
  void newObject();
- void newObject(QString, QString, QString);
+ void createObject();
  void fileDialog(int);
 // void fileDialog(NameFilters::NFs);
 
@@ -74,15 +103,26 @@
  void setToolTipString(QString);
  void setFileString(QString);
  
+ void getObjectID(QString);
+ void selectObject();
+ 
  void setXPos(int);
  void setYPos(int);
  
  protected:
  void mousePressEvent(QMouseEvent*);
  void mouseMoveEvent(QMouseEvent*);
+ void mouseReleaseEvent (QMouseEvent *);
+ 
+ void keyPressEvent(QKeyEvent *);
+ 
  
  signals:
- void newObjectCreated();
+ void newObjectCreated(QGraphicsItem *);
  void fileStringChanged(QString);
+ void objectSelected(QGraphicsItem *);
+ void objectMoved();
+ 
+ void SIG_deleteObject();
  };
  #endif

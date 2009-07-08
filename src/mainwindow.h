@@ -44,20 +44,27 @@
  SideBarClass *SideBar;
  MainWindow();
 
+ bool itemAdded;
 
  private slots:
- void newFile();
+ void newMap();
  void open();
  void openMap();
  void save();
  void savef();
- void addNewObjectToList();
+ 
+ void addNewObjectToList(QGraphicsItem *);
 
  void updateItemList(int);
+ void updateSpinbox();
  
  void sideBar_SelectFile();
  void sideBar_FileSelected();
  void spinboxHandler();
+ void setObjTyp(QString);
+ void markListItem(QGraphicsItem*);
+ 
+ void deleteCurrentObject();
 
  private:
  void createActions();
@@ -72,6 +79,9 @@
  QAction *saveAct;
  QAction *saveAsAct;
  QAction *quitAct;
+ 
+ QAction *newObjectAct;
+ QAction *rmcurrentObjectAct;
  
  QString mapfilename;
  

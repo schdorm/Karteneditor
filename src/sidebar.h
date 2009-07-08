@@ -27,22 +27,32 @@
  #include <QtGui/QLabel>
  #include <QtGui/QPushButton>
  #include <QtGui/QSpinBox>
+ #include <QtGui/QComboBox>
 
  
  class SideBarClass : public QWidget
  {
  Q_OBJECT
  public:
- QStringList MapEntries;
+ QStringList staticListEntries;
+ //QStringList MapEntries;
  SideBarClass();
  
+  QComboBox *itemTyp;
   QListWidget *itemListWidget;
   QPushButton *selectFileButton;
   QLabel *fileView;
   QLineEdit *editToolTip;
   QSpinBox *XBox, *YBox;
   QDoubleSpinBox *ZBox;
- void initMapEntriesList();
+ //void initMapEntriesList();
+
+protected:
+void keyPressEvent(QKeyEvent*);
+
+signals:
+void SIG_deleteObject();
+
 
  };
  #endif

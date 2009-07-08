@@ -102,13 +102,13 @@ void MainWindow::createActions()
   newAct = new QAction(tr("&New"), this);
   newAct->setShortcuts(QKeySequence::New);
   newAct->setStatusTip(tr("Create a new map"));
-  newAct->setIcon(QIcon(":.img/icon_new_map_01.png"));
+  newAct->setIcon(QIcon(":img/icon_new_map_01.png"));
   connect(newAct, SIGNAL(triggered()), this, SLOT(newMap()));
 
   openAct = new QAction(tr("&Open..."), this);
   openAct->setShortcuts(QKeySequence::Open);
   openAct->setStatusTip(tr("Open an existing map"));
-  openAct->setIcon(QIcon(":.img/icon_open_map_03.png"));
+  openAct->setIcon(QIcon(":img/icon_open_map_03.png"));
   connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
 
   saveAct = new QAction(tr("&Save"), this);
@@ -124,7 +124,7 @@ void MainWindow::createActions()
   quitAct = new QAction(tr("&Exit"), this);
   quitAct->setShortcut(tr("Ctrl+Q"));
   quitAct->setStatusTip(tr("Close the application"));
-  quitAct->setIcon(QIcon(":.img/icon_quit_02.png"));
+  quitAct->setIcon(QIcon(":img/icon_quit_02.png"));
   connect(quitAct, SIGNAL(triggered()), this, SLOT(close()));
   
   newObjectAct = new QAction(tr("&New Object"), this);
